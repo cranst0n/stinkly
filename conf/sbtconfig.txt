@@ -1,0 +1,19 @@
+# Set the java args to high
+
+-Xms512M
+
+-Xmx4G
+
+-XX:+UseConcMarkSweepGC
+
+-XX:+CMSClassUnloadingEnabled
+
+-Xss2M
+
+# Set the extra SBT options
+
+-Dsbt.log.format=true
+
+-Dsbt.override.build.repos=true
+
+-Dsbt.repository.config=repositories

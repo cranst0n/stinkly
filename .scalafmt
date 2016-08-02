@@ -1,0 +1,8 @@
+--style defaultWithAlign
+--maxColumn 100
+--continuationIndentCallSite 2
+--continuationIndentDefnSite 2
+--spacesInImportCurlyBraces true
+--alignStripMarginStrings true
+--danglingParentheses true
+--alignByOpenParenCallSite false

@@ -1,0 +1,19 @@
+### Scala ###
+*.class
+*.log
+
+### SBT ###
+.cache
+.history
+.lib/
+dist/*
+target/
+project/project
+project/target
+
+### Ensime ###
+.ensime*
+
+### SublimeText ###
+*.sublime*
+
