@@ -16,6 +16,6 @@ addSbtPlugin("org.scoverage"      %  "sbt-scoverage"          %  "1.3.5")
 
 // Code analysis/formatting
 addSbtPlugin("org.scalastyle"     %% "scalastyle-sbt-plugin"  %  "0.8.0")
-addSbtPlugin("com.geirsson"       %  "sbt-scalafmt"           %  "0.2.11")
+addSbtPlugin("com.geirsson"       %  "sbt-scalafmt"           %  "0.2.12")
 addSbtPlugin("de.heikoseeberger"  %  "sbt-header"             %  "1.6.0")
 addSbtPlugin("com.scalapenos"     %  "sbt-prompt"             %  "1.0.0")
