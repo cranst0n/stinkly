@@ -88,7 +88,6 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
     linkPackScollPane.setContent(linkPackList)
     linkPackList.setFillWidth(true)
 
-    linkPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER)
     linkPane.setFitToWidth(true)
     linkPane.setContent(linkList)
     linkList.setFillWidth(true)
@@ -163,28 +162,33 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
     card.getStyleClass().add("link-card")
 
     linkPane.widthProperty.onChange { (_, _, width) =>
-      sizeMe(linkPane.width())
+      sizeMe(linkPane.width(), linkPane.height())
+    }
+
+    linkPane.heightProperty.onChange { (_, _, height) =>
+      sizeMe(linkPane.width(), linkPane.height())
     }
 
     JFXDepthManager.setDepth(card, 2)
-    sizeMe(linkPane.width())
+    sizeMe(linkPane.width(), linkPane.height())
 
-    lazy val mediaNode = ContentNode(link, () => sizeMe(linkPane.width()))
+    lazy val mediaNode = ContentNode(link, () => sizeMe(linkPane.width(), linkPane.height()))
 
     contentContainer.getChildren().add(mediaNode)
     card.getChildren().add(contentContainer)
 
     getChildren().addAll(spacerLeft, card, spacerRight)
 
-    private[this] def sizeMe(parentWidth: Double): Unit = {
+    private[this] def sizeMe(parentWidth: Double, parentHeight: Double): Unit = {
 
-      val prefWidth = ((parentWidth - 50) min mediaNode.contentWidth())
+      val prefWidth  = ((parentWidth - 50) min mediaNode.contentWidth())
+      val prefHeight = ((parentHeight - 100) min mediaNode.contentHeight())
 
       contentContainer.maxWidthProperty.set(prefWidth)
-      contentContainer.prefWidthProperty.set(prefWidth)
-      contentContainer.minWidthProperty.set(prefWidth)
+      contentContainer.maxHeightProperty.set(prefHeight)
 
       mediaNode.setContentPrefWidth(prefWidth)
+      mediaNode.setContentPrefHeight(prefHeight)
     }
   }
 
@@ -196,7 +200,8 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
     val stopButton   = new JFXButton()
     val progressBar  = new JFXProgressBar(0)
     val spacer       = new Region()
-    val saveAsButton = new JFXButton
+    val zoomButton   = new JFXButton()
+    val saveAsButton = new JFXButton()
 
     val contentNode = Try {
 
@@ -240,9 +245,13 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
           .createIcon(MaterialDesignIcon.STOP, "2em")
       )
 
+      progressBar.prefWidthProperty <== (controlPanel.width - playButton.width - pauseButton.width -
+            stopButton.width - zoomButton.width - saveAsButton.width - 15)
+
       playButton.getStyleClass().add("playback-control-button")
       pauseButton.getStyleClass().add("playback-control-button")
       stopButton.getStyleClass().add("playback-control-button")
+      progressBar.getStyleClass().add("playback-progress-bar")
 
       controlPanel.getChildren().addAll(playButton, pauseButton, stopButton, progressBar)
 
@@ -257,6 +266,7 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
     }
 
     HBox.setHgrow(spacer, Priority.ALWAYS)
+
     saveAsButton.getStyleClass().add("playback-control-button")
     saveAsButton.setGraphic(
       new GlyphsFactory(classOf[MaterialDesignIconView])
@@ -265,7 +275,27 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
     saveAsButton.onAction = handle {
       ContentNode.promptSave(getScene().getWindow(), link)
     }
-    controlPanel.getChildren().addAll(spacer, saveAsButton)
+
+    zoomButton.getStyleClass().add("playback-control-button")
+    zoomButton.setGraphic(
+      new GlyphsFactory(classOf[MaterialDesignIconView])
+        .createIcon(MaterialDesignIcon.MAGNIFY, "2em")
+    )
+    zoomButton.onAction = handle {
+      contentNode match {
+        case iv: ImageView => {
+          iv.setFitWidth(iv.getImage().width())
+          iv.setFitHeight(iv.getImage().height())
+        }
+        case mv: MediaView => {
+          mv.setFitWidth(mv.getMediaPlayer().getMedia().width().toDouble)
+          mv.setFitHeight(mv.getMediaPlayer().getMedia().height().toDouble)
+        }
+        case _ =>
+      }
+    }
+
+    controlPanel.getChildren().addAll(spacer, zoomButton, saveAsButton)
 
     controlPanel.setAlignment(Pos.CENTER_LEFT)
     getChildren().addAll(contentNode)
@@ -290,10 +320,26 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
       }
     }
 
+    def contentHeight(): Double = {
+      contentNode match {
+        case iv: ImageView => iv.getImage.height.doubleValue
+        case mv: MediaView => mv.getMediaPlayer().getMedia().height.doubleValue
+        case _             => 500
+      }
+    }
+
     def setContentPrefWidth(prefWidth: Double): Unit = {
       contentNode match {
         case iv: ImageView => iv.setFitWidth(prefWidth)
         case mv: MediaView => mv.setFitWidth(prefWidth)
+        case _             => ()
+      }
+    }
+
+    def setContentPrefHeight(prefHeight: Double): Unit = {
+      contentNode match {
+        case iv: ImageView => iv.setFitHeight(prefHeight)
+        case mv: MediaView => mv.setFitHeight(prefHeight)
         case _             => ()
       }
     }
