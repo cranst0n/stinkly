@@ -21,6 +21,7 @@ import javafx.stage.{ FileChooser, Window }
 
 import com.jfoenix.controls._
 import com.jfoenix.effects.JFXDepthManager
+import com.typesafe.scalalogging.LazyLogging
 
 import de.jensd.fx.glyphs.GlyphsFactory
 import de.jensd.fx.glyphs.materialdesignicons.{ MaterialDesignIcon, MaterialDesignIconView }
@@ -29,7 +30,9 @@ import better.files._
 
 import stinkly.core._
 
-class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends BorderPane {
+class LinkPackNavigator(database: Database, rootStackPane: StackPane)
+    extends BorderPane
+    with LazyLogging {
 
   case class LinkPackButton(file: File) extends JFXButton {
 
@@ -98,10 +101,13 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends Bo
   }
 
   private[this] def populateLinkPackList(): Unit = {
+    logger.trace("Populating link pack list...")
+    val linkPackFiles = database.linkPackFiles.asScala
+
     Platform.runLater(new Runnable() {
       override def run(): Unit = {
         linkPackList.getChildren().clear()
-        val buttons = database.linkPackFiles.asScala.foreach { f =>
+        val buttons = linkPackFiles.foreach { f =>
           val packButton = LinkPackButton(f)
           packButton.onAction = handle { showLinkPack(f) }
           linkPackList.getChildren().add(packButton)
@@ -111,6 +117,8 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends Bo
   }
 
   private[this] def showLinkPack(file: File): Unit = {
+
+    logger.debug(s"Showing link pack: $file")
 
     val task = new Task[Unit] {
       override protected def call(): Unit = {
@@ -122,12 +130,15 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends Bo
           }
         })
 
+        logger.trace(s"Loading link pack: $file")
         val linkPack = LinkPack.fromFile(file)
+        logger.trace(s"Finished loading link pack: $file")
 
         Platform.runLater(new Runnable() {
           override def run(): Unit = {
             linkList.getChildren().clear()
             linkPack.links.foreach { link =>
+              logger.trace(s"Creating LinkCard for: ${ link.source }")
               linkList.getChildren().addAll(LinkCard(link))
             }
           }
@@ -189,9 +200,14 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends Bo
 
     val contentNode = Try {
 
-      val media       = new Media(link.source)
+      logger.debug(s"Loading link card for: ${ link.source }")
+
+      val media = new Media(link.source)
+      logger.trace(s"Created Media object for: ${ link.source }")
       val mediaPlayer = new MediaPlayer(media)
-      val mediaView   = new MediaView(mediaPlayer)
+      logger.trace(s"Created MediaPlayer for: ${ link.source }")
+      val mediaView = new MediaView(mediaPlayer)
+      logger.trace(s"Created MediaView for: ${ link.source }")
 
       mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE)
       mediaPlayer.currentTimeProperty.onChange { (_, _, time) =>
@@ -232,6 +248,9 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends Bo
 
       mediaView
     }.toOption.getOrElse {
+
+      logger.debug(s"[${ link.source }] as Media load failed. Loading ImageView...")
+
       val imageView = new ImageView(new Image(link.source))
       imageView.setPreserveRatio(true)
       imageView
@@ -285,6 +304,8 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane) extends Bo
     private[this] val saveFileChooser = new FileChooser()
 
     def promptSave(parent: Window, link: Link): Unit = {
+
+      logger.debug(s"Saving link content: ${ link.source }")
 
       saveFileChooser.setTitle("Save Link")
       saveFileChooser.setInitialFileName(link.source.drop(link.source.lastIndexOf('/') + 1))

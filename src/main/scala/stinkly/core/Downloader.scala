@@ -5,6 +5,8 @@ import scala.util.Try
 
 import java.io.ByteArrayOutputStream
 
+import com.typesafe.scalalogging.LazyLogging
+
 import cats.data.Xor
 
 trait Downloader {
@@ -12,27 +14,36 @@ trait Downloader {
   def download(url: String): Xor[Throwable, Link]
 }
 
-object Downloader {
+object Downloader extends LazyLogging {
 
   def curl(url: String): Array[Byte] = {
+    logger.debug(s"curl-ing '$url'")
     val baos = new ByteArrayOutputStream()
     (s"curl -s $url" #> baos).!
     baos.toByteArray
   }
 
   def isAvailable(): Boolean = {
-    Try(curl("www.google.com")).toOption.isDefined
+    val res = Try(curl("www.google.com")).toOption.isDefined
+    logger.debug(s"Downloader.isAvailable(): $res")
+    res
   }
 
-  def forUrl(url: String): Option[Downloader] = Available.find(_.matches(url))
+  def forUrl(url: String): Option[Downloader] = {
+    val res = Available.find(_.matches(url))
+    logger.debug(s"Downloader.forUrl($url): ${ res.getClass().getName() }")
+    res
+  }
   private[core] val Available =
     List(ImgurDownloader, RedditUploadsDownloader, SimpleImageDownloader)
 }
 
-object SimpleImageDownloader extends Downloader {
+object SimpleImageDownloader extends Downloader with LazyLogging {
 
   override def matches(url: String): Boolean = {
-    supportedExtensions.exists(ext => url.endsWith(ext))
+    val res = supportedExtensions.exists(ext => url.endsWith(ext))
+    logger.trace(s"SimpleImageDownloader.matches($url): $res")
+    res
   }
 
   override def download(url: String): Xor[Throwable, Link] = {
@@ -45,10 +56,12 @@ object SimpleImageDownloader extends Downloader {
   private[this] val supportedExtensions = List(".gif", ".jpeg", ".jpg", ".mp4", ".png")
 }
 
-object ImgurDownloader extends Downloader {
+object ImgurDownloader extends Downloader with LazyLogging {
 
   def matches(url: String): Boolean = {
-    List(SimpleURL).exists(_.findFirstIn(url.drop(url.indexOf("imgur"))).isDefined)
+    val res = List(SimpleURL).exists(_.findFirstIn(url.drop(url.indexOf("imgur"))).isDefined)
+    logger.trace(s"ImgurDownloader.matches($url): $res")
+    res
   }
 
   override def download(url: String): Xor[Throwable, Link] = {
@@ -74,10 +87,13 @@ object ImgurDownloader extends Downloader {
   private[this] val SimpleURL = """imgur\.com/(\w+)(.[a-zA-Z]+)?""".r
 }
 
-object RedditUploadsDownloader extends Downloader {
+object RedditUploadsDownloader extends Downloader with LazyLogging {
 
   override def matches(url: String): Boolean = {
-    List(SimpleURL).exists(_.findFirstIn(url.drop(url.indexOf("i.reddituploads"))).isDefined)
+    val res =
+      List(SimpleURL).exists(_.findFirstIn(url.drop(url.indexOf("i.reddituploads"))).isDefined)
+    logger.trace(s"RedditUploadsDownloader.matches($url): $res")
+    res
   }
 
   override def download(url: String): Xor[Throwable, Link] = {

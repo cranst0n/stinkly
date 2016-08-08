@@ -9,6 +9,7 @@ import java.util.zip._
 import javafx.collections.{ FXCollections, ObservableList }
 
 import com.sksamuel.scrimage.Using
+import com.typesafe.scalalogging.LazyLogging
 
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -25,7 +26,9 @@ trait Database {
 
 }
 
-class DiskDatabase(directory: File) extends Database with Using {
+class DiskDatabase(directory: File) extends Database with Using with LazyLogging {
+
+  logger.debug(s"Loading disk-based database from ${ directory.toString }")
 
   directory.createIfNotExists(true)
   val packDirectory = (directory / "packs").createIfNotExists(true)
@@ -39,22 +42,20 @@ class DiskDatabase(directory: File) extends Database with Using {
         .sortWith((a, b) => a.name > b.name)
         .asJava
     )
+    logger.debug(s"Found ${ list.size } link pack files.")
     list
   }
 
   override def importLinkPackFile(linkPackFile: File): File = {
     val copied = linkPackFile.copyTo(packDirectory / linkPackFile.name)
-    linkPackFiles.addAll(copied)
-    FXCollections.sort(linkPackFiles, new Comparator[File]() {
-      override def compare(a: File, b: File): Int = {
-        a.name compareTo b.name
-      }
-    })
-    copied
+    logger.debug(s"Imported $linkPackFile to $copied")
+    addLinkPackFile(copied)
   }
 
   override def create(linkPack: LinkPack): File = {
     val file = directory / "packs" / LinkPack.fileNameFor(linkPack)
+
+    logger.debug(s"Creating new link pack file: $file")
 
     using(new FileOutputStream(file.toJava)) { fileOut =>
       using(new ZipOutputStream(fileOut)) { zipOut =>
@@ -65,6 +66,7 @@ class DiskDatabase(directory: File) extends Database with Using {
 
         linkPack.links.zipWithIndex.foreach {
           case (link, ix) =>
+            logger.debug(s"Adding $link.source to pack file.")
             val entry = new ZipEntry(link.source)
             entry.setComment(link.comment)
 
@@ -75,6 +77,10 @@ class DiskDatabase(directory: File) extends Database with Using {
       }
     }
 
+    addLinkPackFile(file)
+  }
+
+  private[this] def addLinkPackFile(file: File): File = {
     linkPackFiles.addAll(file)
     FXCollections.sort(linkPackFiles, new Comparator[File]() {
       override def compare(a: File, b: File): Int = {
@@ -82,7 +88,6 @@ class DiskDatabase(directory: File) extends Database with Using {
           LinkPackManifest.fromZipFile(b).created
       }
     })
-
     file
   }
 

@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.zip.ZipFile
 
 import com.sksamuel.scrimage.Using
+import com.typesafe.scalalogging.LazyLogging
 
 import org.apache.commons.io.IOUtils
 
@@ -53,7 +54,7 @@ object LinkPackManifest extends Using {
   }
 }
 
-object LinkPack extends Using {
+object LinkPack extends Using with LazyLogging {
 
   def apply(links: List[Link]): LinkPack = {
     LinkPack(LinkPackManifest(), links)
@@ -61,8 +62,12 @@ object LinkPack extends Using {
 
   def fromFile(file: File): LinkPack = {
 
+    logger.trace(s"Loading/unzipping link pack file from: $file")
+
     val tempDir: File = file.unzip()
     tempDir.toJava.deleteOnExit()
+
+    logger.debug(s"Loading link pack from: [$file] ==> [$tempDir]")
 
     val links = tempDir.list
       .filter(_.name != LinkPackManifest.FileName)

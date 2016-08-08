@@ -20,18 +20,20 @@ lazy val stinkly = (project in file(".")).
 
 resolvers += Resolver.jcenterRepo
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules"  %% "scala-java8-compat"                % "0.7.0",
-  "org.specs2"              %% "specs2-core"                       % "3.8.4"     %   "test",
-  "org.typelevel"           %% "cats"                              % "0.6.1",
-  "io.circe"                %% "circe-core"                        % "0.5.0-M2",
-  "io.circe"                %% "circe-generic"                     % "0.5.0-M2",
-  "io.circe"                %% "circe-parser"                      % "0.5.0-M2",
-  "com.github.pathikrit"    %% "better-files"                      % "2.16.0",
-  "commons-io"              %  "commons-io"                        % "2.5",
-  "com.sksamuel.scrimage"   %% "scrimage-core"                     % "2.1.6",
-  "org.scalafx"             %% "scalafx"                           % "8.0.92-R10",
-  "de.jensd"                %  "fontawesomefx-commons"             % "8.12",
-  "de.jensd"                %  "fontawesomefx-materialdesignfont"  % "1.6.50"
+  "org.scala-lang.modules"     %% "scala-java8-compat"                % "0.7.0",
+  "org.specs2"                 %% "specs2-core"                       % "3.8.4"     %   "test",
+  "com.typesafe.scala-logging" %% "scala-logging"                     % "3.4.0",
+  "ch.qos.logback"             %  "logback-classic"                   % "1.1.7",
+  "org.typelevel"              %% "cats"                              % "0.6.1",
+  "io.circe"                   %% "circe-core"                        % "0.5.0-M2",
+  "io.circe"                   %% "circe-generic"                     % "0.5.0-M2",
+  "io.circe"                   %% "circe-parser"                      % "0.5.0-M2",
+  "com.github.pathikrit"       %% "better-files"                      % "2.16.0",
+  "commons-io"                 %  "commons-io"                        % "2.5",
+  "com.sksamuel.scrimage"      %% "scrimage-core"                     % "2.1.6",
+  "org.scalafx"                %% "scalafx"                           % "8.0.92-R10",
+  "de.jensd"                   %  "fontawesomefx-commons"             % "8.12",
+  "de.jensd"                   %  "fontawesomefx-materialdesignfont"  % "1.6.50"
 )
 
 cancelable in Global := true
