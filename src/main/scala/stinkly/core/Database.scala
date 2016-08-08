@@ -67,7 +67,7 @@ class DiskDatabase(directory: File) extends Database with Using with LazyLogging
         linkPack.links.zipWithIndex.foreach {
           case (link, ix) =>
             logger.debug(s"Adding $link.source to pack file.")
-            val entry = new ZipEntry(link.source)
+            val entry = new ZipEntry(sanitizeFileName(link.source))
             entry.setComment(link.comment)
 
             zipOut.putNextEntry(entry)
@@ -89,6 +89,12 @@ class DiskDatabase(directory: File) extends Database with Using with LazyLogging
       }
     })
     file
+  }
+
+  private[this] def sanitizeFileName(name: String): String = {
+    """`~!@#$%^&_=+*(),?""".toList.map(_.toString).fold(name) { (sanitized, char) =>
+      sanitized.replaceAllLiterally(char.toString, "")
+    }
   }
 
 }
