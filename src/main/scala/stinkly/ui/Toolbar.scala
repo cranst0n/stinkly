@@ -2,9 +2,12 @@ package stinkly.ui
 
 import scalafx.Includes._
 
+import javafx.application.Platform
 import javafx.concurrent.Task
+import javafx.geometry.Insets
 import javafx.scene.control.{ Label, Tooltip }
 import javafx.scene.layout.{ HBox, Priority, Region, StackPane, VBox }
+import javafx.scene.text.Text
 import javafx.stage.FileChooser
 
 import com.jfoenix.controls._
@@ -66,15 +69,16 @@ class Toolbar(database: Database, rootStackPane: StackPane) extends JFXToolbar {
 private[this] class CreateLinkPackDialog(database: Database, rootStackPane: StackPane)
     extends JFXDialog {
 
-  private[this] val rootContentPane  = new StackPane()
-  private[this] val contentBox       = new VBox(10)
-  private[this] val titleBox         = new HBox(10)
-  private[this] val titleLabel       = new Label("Paste Links Below")
-  private[this] val linkTextArea     = new JFXTextArea()
-  private[this] val actionButtonBox  = new HBox(10)
-  private[this] val createPackButton = new JFXButton("Create Link Pack")
-  private[this] val closeButton      = new JFXButton()
-  private[this] val busySpinner      = new JFXSpinner()
+  private[this] val rootContentPane    = new StackPane()
+  private[this] val contentBox         = new VBox(10)
+  private[this] val titleBox           = new HBox(10)
+  private[this] val titleLabel         = new Label("Paste Links Below")
+  private[this] val linkTextArea       = new JFXTextArea()
+  private[this] val actionButtonBox    = new HBox(10)
+  private[this] val createPackButton   = new JFXButton("Create Link Pack")
+  private[this] val closeButton        = new JFXButton()
+  private[this] val busySpinner        = new JFXSpinner()
+  private[this] val createProgressText = new Text()
 
   closeButton.setGraphic(
     new GlyphsFactory(classOf[MaterialDesignIconView])
@@ -82,6 +86,8 @@ private[this] class CreateLinkPackDialog(database: Database, rootStackPane: Stac
   )
   closeButton.onAction = handle(close())
   busySpinner.setVisible(false)
+
+  StackPane.setMargin(createProgressText, new Insets(50, 0, 0, 0))
 
   contentBox.getStyleClass.add("dialog-content")
   titleLabel.getStyleClass.add("title")
@@ -95,7 +101,7 @@ private[this] class CreateLinkPackDialog(database: Database, rootStackPane: Stac
   actionButtonBox.getChildren().addAll(createPackButton)
   contentBox.getChildren().addAll(titleBox, linkTextArea, actionButtonBox)
 
-  rootContentPane.getChildren().addAll(contentBox, busySpinner)
+  rootContentPane.getChildren().addAll(contentBox, busySpinner, createProgressText)
 
   setOverlayClose(false)
   setDialogContainer(rootStackPane)
@@ -130,25 +136,37 @@ private[this] class CreateLinkPackDialog(database: Database, rootStackPane: Stac
 
     override protected def call(): (List[Throwable], LinkPack) = {
 
+      updateProgressText(s"0 / ${ urls.size }")
+
       val xors = urls.zipWithIndex.map {
         case (url, ix) =>
           val l = Link.fromUrl(url)
-          updateProgress(ix.toLong, urls.size.toLong)
+          updateProgressText(s"${ ix + 1 } / ${ urls.size }")
           l
       }
 
       val (failures, links) = xors.partition(_.isLeft)
       val linkPack          = LinkPack(links.toList.map(_.toOption).flatten)
 
-      database.create(linkPack)
+      if (links.nonEmpty) { database.create(linkPack) }
 
       (xors.collect { case Left(ex) => ex }, linkPack)
     }
 
+    private[this] def updateProgressText(text: String): Unit = {
+      Platform.runLater(new Runnable() {
+        override def run(): Unit = {
+          createProgressText.setText(text)
+        }
+      })
+    }
+
     private[this] def disableControls(disabled: Boolean): Unit = {
       busySpinner.setVisible(disabled)
+      createProgressText.setVisible(disabled)
       linkTextArea.setDisable(disabled)
       createPackButton.setDisable(disabled)
+      closeButton.setDisable(disabled)
     }
   }
 }
