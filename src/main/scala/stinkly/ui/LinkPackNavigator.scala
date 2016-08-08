@@ -245,9 +245,6 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
           .createIcon(MaterialDesignIcon.STOP, "2em")
       )
 
-      progressBar.prefWidthProperty <== (controlPanel.width - playButton.width - pauseButton.width -
-            stopButton.width - zoomButton.width - saveAsButton.width - 15)
-
       playButton.getStyleClass().add("playback-control-button")
       pauseButton.getStyleClass().add("playback-control-button")
       stopButton.getStyleClass().add("playback-control-button")
