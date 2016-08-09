@@ -66,7 +66,7 @@ class LinkPackNavigator(database: Database,
     getChildren().addAll(spacerLeft, spinner, spacerRight)
   }
 
-  private[this] val dateTimeFormatter = DateTimeFormatter.ofPattern("EEEE MMMM d, K:mma")
+  private[this] val dateTimeFormatter = DateTimeFormatter.ofPattern("EEEE MMMM d, h:mma")
 
   initialize()
 
