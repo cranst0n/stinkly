@@ -2,6 +2,8 @@ package stinkly.ui
 
 import scalafx.Includes._
 
+import java.util.concurrent.ExecutorService
+
 import javafx.application.Platform
 import javafx.concurrent.Task
 import javafx.geometry.Insets
@@ -11,6 +13,7 @@ import javafx.scene.text.Text
 import javafx.stage.FileChooser
 
 import com.jfoenix.controls._
+import com.typesafe.scalalogging.LazyLogging
 
 import de.jensd.fx.glyphs.GlyphsFactory
 import de.jensd.fx.glyphs.materialdesignicons.{ MaterialDesignIcon, MaterialDesignIconView }
@@ -21,13 +24,15 @@ import cats.data.Xor.Left
 
 import stinkly.core._
 
-class Toolbar(database: Database, rootStackPane: StackPane) extends JFXToolbar {
+class Toolbar(database: Database, executorService: ExecutorService, rootStackPane: StackPane)
+    extends JFXToolbar {
 
   private[this] val importLinkPackButton = new JFXButton()
   private[this] val importFileChooser    = new FileChooser()
 
   private[this] val showLinkPackCreatorButton = new JFXButton()
-  private[this] val createLinkPackDialog      = new CreateLinkPackDialog(database, rootStackPane)
+  private[this] val createLinkPackDialog =
+    new CreateLinkPackDialog(database, executorService, rootStackPane)
 
   initialize()
 
@@ -66,8 +71,11 @@ class Toolbar(database: Database, rootStackPane: StackPane) extends JFXToolbar {
   }
 }
 
-private[this] class CreateLinkPackDialog(database: Database, rootStackPane: StackPane)
-    extends JFXDialog {
+private[this] class CreateLinkPackDialog(database: Database,
+                                         executorService: ExecutorService,
+                                         rootStackPane: StackPane)
+    extends JFXDialog
+    with LazyLogging {
 
   private[this] val rootContentPane    = new StackPane()
   private[this] val contentBox         = new VBox(10)
@@ -110,8 +118,7 @@ private[this] class CreateLinkPackDialog(database: Database, rootStackPane: Stac
   createPackButton.onAction = handle {
     val urls = linkTextArea.getText().split("\n").map(_.trim).filter(_.nonEmpty).toList
     if (urls.nonEmpty) {
-      val task = new CreateLinkPackTask(urls)
-      new Thread(task).start()
+      executorService.submit(new CreateLinkPackTask(urls))
     }
   }
 
@@ -128,7 +135,7 @@ private[this] class CreateLinkPackDialog(database: Database, rootStackPane: Stac
       if (failed.isEmpty) {
         close()
       } else {
-        failed.foreach(throwable => println(throwable.getMessage()))
+        failed.foreach(throwable => logger.error("Failed download.", throwable))
       }
     }
 

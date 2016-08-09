@@ -8,6 +8,7 @@ import scalafx.Includes._
 import java.nio.file.StandardOpenOption
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ExecutorService
 
 import javafx.application.Platform
 import javafx.collections.ListChangeListener
@@ -30,7 +31,9 @@ import better.files._
 
 import stinkly.core._
 
-class LinkPackNavigator(database: Database, rootStackPane: StackPane)
+class LinkPackNavigator(database: Database,
+                        executorService: ExecutorService,
+                        rootStackPane: StackPane)
     extends BorderPane
     with LazyLogging {
 
@@ -145,7 +148,7 @@ class LinkPackNavigator(database: Database, rootStackPane: StackPane)
       }
     }
 
-    new Thread(task).start()
+    executorService.submit(task)
   }
 
   case class LinkCard(link: Link) extends HBox {

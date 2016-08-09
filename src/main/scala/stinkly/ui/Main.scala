@@ -2,29 +2,43 @@ package stinkly.ui
 
 import scala.util.Random
 
-import java.net.URL
+import scalafx.Includes._
 
-import javafx.application.Application
+import java.net.URL
+import java.util.concurrent.{ Executors, ThreadFactory }
+
+import javafx.application.{ Application, Platform }
 import javafx.scene.Scene
 import javafx.scene.image.Image
 import javafx.scene.layout.{ Priority, StackPane, VBox }
-import javafx.stage.Stage
+import javafx.stage.{ Stage, WindowEvent }
+
+import com.typesafe.scalalogging.LazyLogging
 
 import better.files._
 
 import stinkly.BuildInfo
 import stinkly.core.DiskDatabase
 
-class Main extends Application {
+class Main extends Application with LazyLogging {
+
+  private[this] val database = new DiskDatabase(File.home / ".stinkly")
+  private[this] val executorService = Executors.newCachedThreadPool(new ThreadFactory() {
+    override def newThread(runnable: Runnable): Thread = {
+      val thread = new Thread(runnable)
+      thread.setDaemon(true)
+      thread
+    }
+  })
 
   override def start(stage: Stage): Unit = {
 
-    val database = new DiskDatabase(File.home / ".stinkly")
+    logger.debug(s"Starting application...")
 
     val rootStackPane     = new StackPane()
     val pane              = new VBox()
-    val toolbar           = new Toolbar(database, rootStackPane)
-    val linkPackNavigator = new LinkPackNavigator(database, rootStackPane)
+    val toolbar           = new Toolbar(database, executorService, rootStackPane)
+    val linkPackNavigator = new LinkPackNavigator(database, executorService, rootStackPane)
 
     toolbar.getStyleClass().add("toolbar")
 
@@ -37,8 +51,20 @@ class Main extends Application {
     stage.setTitle(s"Stinkly - v${ BuildInfo.gitDescribe }")
     stage.getIcons().add(getAppIcon())
     stage.setScene(scene)
+    stage.onCloseRequest = handle { e: WindowEvent =>
+      logger.trace(s"Calling Platform.exit()")
+      Platform.exit()
+    }
 
     stage.show()
+  }
+
+  override def stop(): Unit = {
+    logger.debug(s"Stopping application...")
+    logger.trace(s"Shutting down executor service.")
+    executorService.shutdownNow()
+    logger.trace(s"Calling System.exit()")
+    System.exit(0)
   }
 
   private[this] def getAppIcon(): Image = {
@@ -56,7 +82,7 @@ class Main extends Application {
   }
 }
 
-object Main {
+object Main extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
     Application.launch(classOf[Main], args: _*)
