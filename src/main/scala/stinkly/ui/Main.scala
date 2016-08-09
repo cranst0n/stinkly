@@ -48,7 +48,7 @@ class Main extends Application with LazyLogging {
 
     val scene = CSS.install(new Scene(rootStackPane, 1200, 800))
 
-    stage.setTitle(s"Stinkly - v${ BuildInfo.gitDescribe }")
+    stage.setTitle(s"Stinkly - ${ BuildInfo.gitDescribe }")
     stage.getIcons().add(getAppIcon())
     stage.setScene(scene)
     stage.onCloseRequest = handle { e: WindowEvent =>

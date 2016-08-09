@@ -84,8 +84,8 @@ class DiskDatabase(directory: File) extends Database with Using with LazyLogging
     linkPackFiles.addAll(file)
     FXCollections.sort(linkPackFiles, new Comparator[File]() {
       override def compare(a: File, b: File): Int = {
-        LinkPackManifest.fromZipFile(a).created compareTo
-          LinkPackManifest.fromZipFile(b).created
+        (LinkPackManifest.fromZipFile(a).created compareTo
+              LinkPackManifest.fromZipFile(b).created) * -1
       }
     })
     file
