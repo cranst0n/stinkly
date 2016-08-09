@@ -18,6 +18,7 @@ import javafx.scene.control.ScrollPane
 import javafx.scene.image.{ Image, ImageView }
 import javafx.scene.media.{ Media, MediaPlayer, MediaView }
 import javafx.scene.layout._
+import javafx.scene.text.Text
 import javafx.stage.{ FileChooser, Window }
 
 import com.jfoenix.controls._
@@ -37,14 +38,85 @@ class LinkPackNavigator(database: Database,
     extends BorderPane
     with LazyLogging {
 
-  case class LinkPackButton(file: File) extends JFXButton {
+  case class LinkPackButton(file: File) extends HBox(0) {
+
+    val showPackButton = new JFXButton(
+      dateTimeFormatter.format(LinkPack.instantOf(file).atZone(ZoneId.systemDefault()))
+    )
+    val packInfoButton   = new JFXButton()
+    val deletePackButton = new JFXButton()
 
     setMaxWidth(Double.MaxValue)
-    getStyleClass().add("button")
+    showPackButton.setMaxWidth(Double.MaxValue)
+    packInfoButton.setMaxWidth(Double.MaxValue)
+    deletePackButton.setMaxWidth(Double.MaxValue)
 
-    val instant    = LinkPack.instantOf(file)
-    val dateString = dateTimeFormatter.format(instant.atZone(ZoneId.systemDefault()))
-    setText(dateString)
+    HBox.setHgrow(showPackButton, Priority.ALWAYS)
+    showPackButton.getStyleClass().add("button")
+    packInfoButton.getStyleClass().add("action-button")
+    deletePackButton.getStyleClass().add("action-button")
+
+    packInfoButton.setGraphic(
+      new GlyphsFactory(classOf[MaterialDesignIconView])
+        .createIcon(MaterialDesignIcon.INFORMATION_OUTLINE, "1em")
+    )
+
+    deletePackButton.setGraphic(
+      new GlyphsFactory(classOf[MaterialDesignIconView])
+        .createIcon(MaterialDesignIcon.DELETE, "1em")
+    )
+
+    showPackButton.onAction = handle {
+      showLinkPack(this)
+    }
+
+    packInfoButton.onAction = handle {
+      val layout = new JFXDialogLayout()
+      layout.setHeading(new Text(showPackButton.getText()))
+      layout.setBody(
+        new VBox(
+          new Text(s"File:    ${ file.toString() }"),
+          new Text(s"Size:    ${ (file.size / 1024d / 1024d).toInt } MB"),
+          new Text(s"Version: ${ LinkPackManifest.fromFile(file).version }")
+        )
+      )
+
+      val dialog = new JFXDialog()
+      dialog.setDialogContainer(rootStackPane)
+      dialog.setContent(layout)
+
+      dialog.show()
+    }
+
+    deletePackButton.onAction = handle {
+      val dialog       = new JFXDialog()
+      val layout       = new JFXDialogLayout()
+      val deleteButton = new JFXButton("Delete")
+      deleteButton.onAction = handle {
+        database.delete(file)
+        dialog.close()
+      }
+
+      layout.setBody(new Text("Are you sure you want to delete this file?"))
+      layout.setActions(deleteButton)
+
+      dialog.setDialogContainer(rootStackPane)
+      dialog.setContent(layout)
+
+      dialog.show()
+    }
+
+    getChildren().addAll(showPackButton, packInfoButton, deletePackButton)
+
+    def setSelected(selected: Boolean): Unit = {
+      if (selected) {
+        showPackButton.getStyleClass().remove("button")
+        showPackButton.getStyleClass().add("selected")
+      } else {
+        showPackButton.getStyleClass().remove("selected")
+        showPackButton.getStyleClass().add("button")
+      }
+    }
   }
 
   private[this] val padding = new Insets(5, 5, 5, 5)
@@ -110,31 +182,38 @@ class LinkPackNavigator(database: Database,
       override def run(): Unit = {
         linkPackList.getChildren().clear()
         val buttons = linkPackFiles.foreach { f =>
-          val packButton = LinkPackButton(f)
-          packButton.onAction = handle { showLinkPack(f) }
-          linkPackList.getChildren().add(packButton)
+          linkPackList.getChildren().add(LinkPackButton(f))
         }
       }
     })
   }
 
-  private[this] def showLinkPack(file: File): Unit = {
+  private[this] def showLinkPack(sourceButton: LinkPackButton): Unit = {
 
-    logger.debug(s"Showing link pack: $file")
+    logger.debug(s"Showing link pack: ${ sourceButton.file }")
 
     val task = new Task[Unit] {
       override protected def call(): Unit = {
 
         Platform.runLater(new Runnable() {
           override def run(): Unit = {
+
+            linkPackList.getChildren().asScala.foreach {
+              case button: LinkPackButton =>
+                button.setSelected(button eq sourceButton)
+            }
+
+            sourceButton.getStyleClass().remove("button")
+            sourceButton.getStyleClass().add("selected")
+
             linkList.getChildren().clear()
             linkList.getChildren().add(loadingSpinner)
           }
         })
 
-        logger.trace(s"Loading link pack: $file")
-        val linkPack = LinkPack.fromFile(file)
-        logger.trace(s"Finished loading link pack: $file")
+        logger.trace(s"Loading link pack: ${ sourceButton.file }")
+        val linkPack = LinkPack.fromFile(sourceButton.file)
+        logger.trace(s"Finished loading link pack: ${ sourceButton.file }")
 
         Platform.runLater(new Runnable() {
           override def run(): Unit = {

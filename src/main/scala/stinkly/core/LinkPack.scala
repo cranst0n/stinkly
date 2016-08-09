@@ -41,7 +41,7 @@ object LinkPackManifest extends Using {
     new LinkPackManifest(BuildInfo.gitDescribe, System.currentTimeMillis)
 
   def fromFile(file: File): LinkPackManifest = {
-    decode[LinkPackManifest](file.contentAsString).getOrElse(LinkPackManifest())
+    decode[LinkPackManifest](file.contentAsString) getOrElse fromZipFile(file)
   }
 
   def fromZipFile(file: File): LinkPackManifest = {
@@ -71,6 +71,7 @@ object LinkPack extends Using with LazyLogging {
 
     val links = tempDir.list
       .filter(_.name != LinkPackManifest.FileName)
+      .filter(_.isRegularFile)
       .map(f => Link(f.uri.toString, f.loadBytes))
       .toList
 

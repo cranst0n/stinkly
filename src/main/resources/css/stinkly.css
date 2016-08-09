@@ -87,9 +87,9 @@
 
 .link-pack-list-pane {
   -fx-background-color: transparent;
-  -fx-min-width: 225px;
-  -fx-max-width: 225px;
-  -fx-pref-width: 225px;
+  -fx-min-width: 300px;
+  -fx-max-width: 300px;
+  -fx-pref-width: 300px;
 }
 
 /******************************************************************************
@@ -97,6 +97,15 @@
  *****************************************************************************/
 .playback-progress-bar {
   -fx-padding: 10;
+  -fx-max-width: 200.0;
+  -fx-min-width: 200.0;
+  -fx-pref-width: 200.0;
+}
+
+.playback-progress-bar > .track {
+  -fx-max-width: 200.0;
+  -fx-min-width: 200.0;
+  -fx-pref-width: 200.0;
 }
 
 /******************************************************************************
@@ -197,6 +206,16 @@
   -fx-background-color: -default-primary-color;
   -fx-text-fill: -text-primary-color;
   -fx-font-size: 16px;
+}
+
+.link-pack-list-pane .selected {
+  -fx-background-color: -accent-color;
+  -fx-text-fill: -text-primary-color;
+  -fx-font-size: 16px;
+}
+
+.link-pack-list-pane .action-button {
+  -fx-padding: 6, 2, 6, 2;
 }
 
 .link-list-pane > .viewport {

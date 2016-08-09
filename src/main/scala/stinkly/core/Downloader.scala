@@ -16,15 +16,15 @@ trait Downloader {
 
 object Downloader extends LazyLogging {
 
-  def curl(url: String): Array[Byte] = {
-    logger.debug(s"curl-ing '$url'")
+  def curl(url: String, options: String*): Array[Byte] = {
+    logger.debug(s"""curl-ing ${ options.mkString(" ") } '$url'""")
     val baos = new ByteArrayOutputStream()
     (s"curl -s $url" #> baos).!
     baos.toByteArray
   }
 
   def isAvailable(): Boolean = {
-    val res = Try(curl("www.google.com")).toOption.isDefined
+    val res = Try(curl("google.com", "-m 1")).toOption.isDefined
     logger.debug(s"Downloader.isAvailable(): $res")
     res
   }

@@ -24,6 +24,10 @@ trait Database {
 
   def create(linkPack: LinkPack): File
 
+  def delete(linkPack: LinkPack): Unit
+
+  def delete(file: File): Unit
+
 }
 
 class DiskDatabase(directory: File) extends Database with Using with LazyLogging {
@@ -53,7 +57,7 @@ class DiskDatabase(directory: File) extends Database with Using with LazyLogging
   }
 
   override def create(linkPack: LinkPack): File = {
-    val file = directory / "packs" / LinkPack.fileNameFor(linkPack)
+    val file = fileFor(linkPack)
 
     logger.debug(s"Creating new link pack file: $file")
 
@@ -80,15 +84,34 @@ class DiskDatabase(directory: File) extends Database with Using with LazyLogging
     addLinkPackFile(file)
   }
 
+  override def delete(file: File): Unit = {
+    logger.debug(s"Deleting link pack file: $file")
+    file.delete()
+    linkPackFiles.removeAll(file)
+    sortFiles()
+  }
+
+  override def delete(linkPack: LinkPack): Unit = {
+    delete(fileFor(linkPack))
+  }
+
+  private[this] def fileFor(linkPack: LinkPack): File = {
+    directory / "packs" / LinkPack.fileNameFor(linkPack)
+  }
+
   private[this] def addLinkPackFile(file: File): File = {
     linkPackFiles.addAll(file)
+    sortFiles()
+    file
+  }
+
+  private[this] def sortFiles(): Unit = {
     FXCollections.sort(linkPackFiles, new Comparator[File]() {
       override def compare(a: File, b: File): Int = {
         (LinkPackManifest.fromZipFile(a).created compareTo
               LinkPackManifest.fromZipFile(b).created) * -1
       }
     })
-    file
   }
 
   private[this] def sanitizeFileName(name: String): String = {
